@@ -4,7 +4,7 @@ import { createAccessToken } from '../libs/jwt.js';
 
 export const register = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password, role } = req.body;
 
     if (!username || !email || !password) {
       return res.status(400).json({ message: 'Todos los campos son obligatorios' });
@@ -15,7 +15,12 @@ export const register = async (req, res) => {
       return res.status(409).json({ message: 'El correo ya está registrado' });
     }
 
-    const newUser = new User({ username, email, password });
+    const newUser = new User({
+      username,
+      email,
+      password,
+      role: role || 'cliente', // si no viene, queda como cliente
+    });
     await newUser.save();
 
     const token = await createAccessToken({ id: newUser._id });
@@ -30,6 +35,7 @@ export const register = async (req, res) => {
       id: newUser._id,
       username: newUser.username,
       email: newUser.email,
+      role: newUser.role,
     });
   } catch (err) {
     if (err?.code === 11000) {
@@ -65,6 +71,7 @@ export const login = async (req, res) => {
       id: userFound._id,
       username: userFound.username,
       email: userFound.email,
+      role: userFound.role, // 👈 importante para el front
     });
   } catch (err) {
     return res.status(500).json({ message: 'Error interno al iniciar sesión' });
