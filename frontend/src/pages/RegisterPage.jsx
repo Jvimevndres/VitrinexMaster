@@ -2,21 +2,26 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import MainHeader from "../components/MainHeader";
 
 const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v || "");
 
 export default function RegisterPage() {
-  const { register, errors: apiErrors } = useAuth();
+  const { register, errors: apiErrors, setErrors } = useAuth();
   const [form, setForm] = useState({
     username: "",
     email: "",
     password: "",
-    role: "cliente", // 👈 por defecto cliente
+    role: "cliente",
   });
   const [localErrors, setLocalErrors] = useState([]);
 
-  const onChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setForm((f) => ({ ...f, [name]: value }));
+    setLocalErrors([]);
+    setErrors?.([]);
+  };
 
   const onSubmit = (e) => {
     e.preventDefault();
@@ -39,8 +44,9 @@ export default function RegisterPage() {
       setLocalErrors(errs);
       return;
     }
+
     setLocalErrors([]);
-    register(form); // 👈 aquí ya va username, email, password, role
+    register(form);
   };
 
   const allErrors = useMemo(
@@ -52,85 +58,135 @@ export default function RegisterPage() {
   );
 
   return (
-    <div style={{ maxWidth: 520, margin: "4rem auto", fontFamily: "system-ui" }}>
-      <h1 style={{ fontSize: 24, marginBottom: 12 }}>Crear cuenta</h1>
+    <div className="min-h-screen bg-slate-100 flex flex-col">
+      <MainHeader subtitle="Crea tu cuenta para comenzar" />
 
-      {allErrors.length > 0 && (
-        <div style={{ color: "crimson", marginBottom: 12 }}>
-          {allErrors.map((err, i) => (
-            <div key={i}>{err}</div>
-          ))}
-        </div>
-      )}
-
-      <form onSubmit={onSubmit} noValidate>
-        <input
-          type="text"
-          name="username"
-          placeholder="Nombre"
-          value={form.username}
-          onChange={onChange}
-          style={{ width: "100%", padding: 10, marginBottom: 10 }}
-          required
-          minLength={2}
-        />
-        <input
-          type="email"
-          name="email"
-          placeholder="Correo electrónico"
-          value={form.email}
-          onChange={onChange}
-          style={{ width: "100%", padding: 10, marginBottom: 10 }}
-          required
-        />
-        <input
-          type="password"
-          name="password"
-          placeholder="Contraseña"
-          value={form.password}
-          onChange={onChange}
-          style={{ width: "100%", padding: 10, marginBottom: 10 }}
-          required
-          minLength={6}
-        />
-
-        {/* 👇 Selector de rol */}
-        <div style={{ margin: "10px 0 16px" }}>
-          <div style={{ fontWeight: 600, marginBottom: 6 }}>
-            Tipo de cuenta
+      <main className="flex-1 flex items-center justify-center px-4">
+        <div className="w-full max-w-md bg-white border rounded-2xl shadow-sm p-6 space-y-4">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-800">
+              Crear cuenta
+            </h2>
+            <p className="text-sm text-slate-500 mt-1">
+              Regístrate como cliente o vendedor en Vitrinex.
+            </p>
           </div>
-          <label style={{ display: "block", marginBottom: 4 }}>
-            <input
-              type="radio"
-              name="role"
-              value="cliente"
-              checked={form.role === "cliente"}
-              onChange={onChange}
-              style={{ marginRight: 6 }}
-            />
-            Cliente (buscar negocios y reservar/comprar)
-          </label>
-          <label style={{ display: "block" }}>
-            <input
-              type="radio"
-              name="role"
-              value="vendedor"
-              checked={form.role === "vendedor"}
-              onChange={onChange}
-              style={{ marginRight: 6 }}
-            />
-            Vendedor (crear mi negocio en Vitrinex)
-          </label>
+
+          {allErrors.length > 0 && (
+            <div className="text-sm bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 space-y-1">
+              {allErrors.map((err, i) => (
+                <p key={i}>• {err}</p>
+              ))}
+            </div>
+          )}
+
+          <form onSubmit={onSubmit} className="space-y-4" noValidate>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Nombre
+              </label>
+              <input
+                type="text"
+                name="username"
+                value={form.username}
+                onChange={onChange}
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Tu nombre"
+                required
+                minLength={2}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Correo electrónico
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={form.email}
+                onChange={onChange}
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="tucorreo@ejemplo.com"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Contraseña
+              </label>
+              <input
+                type="password"
+                name="password"
+                value={form.password}
+                onChange={onChange}
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Mínimo 6 caracteres"
+                required
+                minLength={6}
+              />
+            </div>
+
+            <div>
+              <p className="block text-sm font-medium text-slate-700 mb-1">
+                Tipo de cuenta
+              </p>
+              <div className="space-y-1 text-sm text-slate-700">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="role"
+                    value="cliente"
+                    checked={form.role === "cliente"}
+                    onChange={onChange}
+                    className="accent-blue-600"
+                  />
+                  <span>
+                    Cliente{" "}
+                    <span className="text-xs text-slate-500">
+                      (buscar negocios y reservar/comprar)
+                    </span>
+                  </span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="role"
+                    value="vendedor"
+                    checked={form.role === "vendedor"}
+                    onChange={onChange}
+                    className="accent-blue-600"
+                  />
+                  <span>
+                    Vendedor{" "}
+                    <span className="text-xs text-slate-500">
+                      (crear y gestionar mis negocios)
+                    </span>
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg py-2 transition"
+            >
+              Registrarme
+            </button>
+          </form>
+
+          <p className="text-xs text-slate-500 text-center">
+            ¿Ya tienes cuenta?{" "}
+            <Link
+              to="/login"
+              className="text-blue-600 hover:text-blue-700 font-medium"
+            >
+              Inicia sesión
+            </Link>
+          </p>
         </div>
-
-        <button type="submit" style={{ padding: "8px 16px" }}>
-          Registrarme
-        </button>
-      </form>
-
-      <p style={{ marginTop: 16 }}>
-        ¿Ya tienes cuenta? <Link to="/login">Inicia sesión</Link>
-      </p>
+      </main>
     </div>
   );
 }
