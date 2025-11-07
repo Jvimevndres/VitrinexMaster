@@ -1,117 +1,105 @@
 // src/pages/LoginPage.jsx
-import { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import MainHeader from "../components/MainHeader";
 
 export default function LoginPage() {
-  const { login, errors: apiErrors, setErrors } = useAuth();
-  const [form, setForm] = useState({ email: "", password: "" });
-  const [localErrors, setLocalErrors] = useState([]);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm();
 
-  const onChange = (e) => {
-    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
-    setLocalErrors([]);
-    setErrors?.([]);
-  };
+  const { signin, isAuthenticated, authErrors } = useAuth();
+  const navigate = useNavigate();
 
-  const onSubmit = (e) => {
-    e.preventDefault();
-    const errs = [];
-
-    if (!form.email) errs.push("Ingresa tu correo electrónico.");
-    if (!form.password) errs.push("Ingresa tu contraseña.");
-
-    if (errs.length) {
-      setLocalErrors(errs);
-      return;
+  useEffect(() => {
+    if (isAuthenticated) {
+      // Después de iniciar sesión, lo dejamos en el mapa
+      navigate("/");
     }
+  }, [isAuthenticated, navigate]);
 
-    setLocalErrors([]);
-    login(form);
-  };
-
-  const allErrors = useMemo(
-    () => [
-      ...(localErrors || []),
-      ...((apiErrors && Array.isArray(apiErrors)) ? apiErrors : []),
-    ],
-    [localErrors, apiErrors]
-  );
+  const onSubmit = handleSubmit(async (values) => {
+    await signin(values); // 👈 usamos signin del AuthContext
+  });
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col">
-      <MainHeader subtitle="Ingresa para gestionar tus negocios" />
+    <div className="min-h-screen flex items-center justify-center bg-slate-100 px-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-md p-6 space-y-4">
+        <h1 className="text-xl font-semibold text-slate-800">
+          Iniciar sesión
+        </h1>
+        <p className="text-sm text-slate-500">
+          Accede a tu cuenta para administrar tus negocios o crear nuevos en Vitrinex.
+        </p>
 
-      <main className="flex-1 flex items-center justify-center px-4">
-        <div className="w-full max-w-md bg-white border rounded-2xl shadow-sm p-6 space-y-4">
-          <div>
-            <h2 className="text-xl font-semibold text-slate-800">
-              Iniciar sesión
-            </h2>
-            <p className="text-sm text-slate-500 mt-1">
-              Accede a tu panel de Vitrinex con tu correo y contraseña.
+        {authErrors &&
+          authErrors.map((err, i) => (
+            <p
+              key={i}
+              className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2"
+            >
+              {err}
             </p>
+          ))}
+
+        <form onSubmit={onSubmit} className="space-y-4 text-sm">
+          <div>
+            <label className="block mb-1 text-slate-700">
+              Correo electrónico
+            </label>
+            <input
+              type="email"
+              {...register("email", {
+                required: "El correo es obligatorio",
+              })}
+              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="ejemplo@correo.com"
+            />
+            {errors.email && (
+              <p className="text-xs text-red-500 mt-1">
+                {errors.email.message}
+              </p>
+            )}
           </div>
 
-          {allErrors.length > 0 && (
-            <div className="text-sm bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 space-y-1">
-              {allErrors.map((err, i) => (
-                <p key={i}>• {err}</p>
-              ))}
-            </div>
-          )}
+          <div>
+            <label className="block mb-1 text-slate-700">Contraseña</label>
+            <input
+              type="password"
+              {...register("password", {
+                required: "La contraseña es obligatoria",
+              })}
+              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="••••••••"
+            />
+            {errors.password && (
+              <p className="text-xs text-red-500 mt-1">
+                {errors.password.message}
+              </p>
+            )}
+          </div>
 
-          <form onSubmit={onSubmit} className="space-y-4" noValidate>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Correo electrónico
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={onChange}
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="tucorreo@ejemplo.com"
-                required
-              />
-            </div>
+          <button
+            type="submit"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-medium transition"
+          >
+            Iniciar sesión
+          </button>
+        </form>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Contraseña
-              </label>
-              <input
-                type="password"
-                name="password"
-                value={form.password}
-                onChange={onChange}
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="••••••••"
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg py-2 transition"
-            >
-              Iniciar sesión
-            </button>
-          </form>
-
-          <p className="text-xs text-slate-500 text-center">
-            ¿No tienes cuenta?{" "}
-            <Link
-              to="/register"
-              className="text-blue-600 hover:text-blue-700 font-medium"
-            >
-              Crear una cuenta
-            </Link>
-          </p>
-        </div>
-      </main>
+        <p className="text-xs text-slate-500 text-center">
+          ¿Aún no tienes cuenta?{" "}
+          <Link
+            to="/register"
+            className="text-blue-600 hover:text-blue-700 font-medium"
+          >
+            Crear una cuenta
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

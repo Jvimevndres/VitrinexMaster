@@ -1,128 +1,114 @@
 // src/context/AuthContext.jsx
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import api from "../api/axios";
-import { listMyStores } from "../api/store";
+import { createContext, useContext, useEffect, useState } from "react";
+import axios from "axios";
 
-const AuthContext = createContext(null);
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+
+const client = axios.create({
+  baseURL: API_URL,
+  withCredentials: true, // para enviar/recibir la cookie del token
+});
+
+const AuthContext = createContext();
+
 export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }) {
-  const navigate = useNavigate();
-
   const [user, setUser] = useState(null);
-  const [errors, setErrors] = useState([]);        // array de strings
+  const [authErrors, setAuthErrors] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loadingProfile, setLoadingProfile] = useState(true);
 
-  // Normaliza errores del backend a un array de strings
-  const toArray = (err) => {
-    const res = err?.response?.data;
-    if (Array.isArray(res?.errors)) return res.errors;
-    if (typeof res?.message === "string") return [res.message];
-    return ["Ocurrió un error. Intenta nuevamente."];
+  // ---------- SIGNUP ----------
+  const signup = async (values) => {
+    try {
+      setAuthErrors([]);
+      const res = await client.post("/auth/register", values);
+      setUser(res.data);
+      setIsAuthenticated(true);
+    } catch (error) {
+      console.error("Error en signup:", error);
+      if (error.response?.data?.message) {
+        setAuthErrors([error.response.data.message]);
+      } else {
+        setAuthErrors(["Error al registrar la cuenta"]);
+      }
+      setIsAuthenticated(false);
+    }
   };
 
-  // Carga el perfil actual y devuelve el usuario
-  const loadProfile = async () => {
+  // ---------- LOGIN ----------
+  const signin = async (values) => {
     try {
-      const { data } = await api.get("/auth/profile");
-      setUser(data);
+      setAuthErrors([]);
+      const res = await client.post("/auth/login", values);
+      setUser(res.data);
       setIsAuthenticated(true);
-      return data; // 👈 importante para saber el rol después de login/register
-    } catch {
+    } catch (error) {
+      console.error("Error en signin:", error);
+      if (error.response?.status === 401) {
+        setAuthErrors(["Credenciales inválidas"]);
+      } else if (error.response?.data?.message) {
+        setAuthErrors([error.response.data.message]);
+      } else {
+        setAuthErrors(["Error al iniciar sesión"]);
+      }
+      setIsAuthenticated(false);
+    }
+  };
+
+  // ---------- LOGOUT ----------
+  const logout = async () => {
+    try {
+      await client.post("/auth/logout");
+    } catch (err) {
+      console.error("Error en logout:", err);
+    } finally {
       setUser(null);
       setIsAuthenticated(false);
-      return null;
+    }
+  };
+
+  // ---------- CARGAR PERFIL (mantener sesión) ----------
+  const checkAuth = async () => {
+    try {
+      const res = await client.get("/auth/profile");
+      setUser(res.data);
+      setIsAuthenticated(true);
+    } catch (error) {
+      // 401 / sin cookie → no autenticado, pero no es error grave
+      setUser(null);
+      setIsAuthenticated(false);
     } finally {
-      setLoadingProfile(false);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadProfile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    checkAuth();
   }, []);
 
-  // Decide a dónde mandar según si el usuario ya tiene tiendas o no (solo vendedores)
-  const redirectByStores = async () => {
-    try {
-      const { data } = await listMyStores();
-      const stores = Array.isArray(data) ? data : [];
-      if (stores.length > 0) {
-        navigate("/dashboard");
-      } else {
-        navigate("/onboarding");
-      }
-    } catch {
-      // Si falla la carga de tiendas, por seguridad lo mandamos a onboarding
-      navigate("/onboarding");
+  // limpiar mensajes de error después de unos segundos
+  useEffect(() => {
+    if (authErrors.length > 0) {
+      const timer = setTimeout(() => setAuthErrors([]), 5000);
+      return () => clearTimeout(timer);
     }
-  };
+  }, [authErrors]);
 
-  const login = async (values) => {
-    setErrors([]);
-    try {
-      await api.post("/auth/login", values);
-
-      const profile = await loadProfile(); // 👈 obtenemos el usuario con su rol
-
-      if (profile?.role === "vendedor") {
-        // VENDEDOR → flujo de tiendas
-        await redirectByStores();
-      } else {
-        // CLIENTE (o cualquier otro) → a la home pública
-        navigate("/");
-      }
-    } catch (err) {
-      const msg = err?.response?.data?.message || "No se pudo iniciar sesión";
-      setErrors([msg]);
-    }
-  };
-
-  const register = async (values) => {
-    setErrors([]);
-    try {
-      await api.post("/auth/register", values);
-
-      const profile = await loadProfile(); // 👈 usuario recién creado con rol
-
-      if (profile?.role === "vendedor") {
-        // VENDEDOR → onboarding/dashboard según tenga tiendas
-        await redirectByStores();
-      } else {
-        // CLIENTE → directo a explorar negocios
-        navigate("/");
-      }
-    } catch (err) {
-      const msg =
-        err?.response?.data?.message || "No se pudo completar el registro";
-      setErrors([msg]);
-    }
-  };
-
-  const logout = async () => {
-    try {
-      await api.post("/auth/logout");
-    } catch {}
-    setUser(null);
-    setIsAuthenticated(false);
-    navigate("/login");
-  };
-
-  const value = useMemo(
-    () => ({
-      user,
-      errors,
-      isAuthenticated,
-      loadingProfile,
-      login,
-      register,
-      logout,
-      setErrors,
-    }),
-    [user, errors, isAuthenticated, loadingProfile]
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated,
+        loading,
+        authErrors,
+        signup,   // 👈 ahora existe
+        signin,   // login
+        logout,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
   );
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
