@@ -37,7 +37,7 @@ const tiposMock = [
 ];
 
 const DEFAULT_CENTER = [-33.45, -70.66];
-const DEFAULT_ZOOM = 12;
+const DEFAULT_ZOOM = 13;
 
 export default function ExploreStoresPage() {
   const [stores, setStores] = useState([]);
@@ -93,7 +93,12 @@ export default function ExploreStoresPage() {
 
   // Aceptamos lat/lng como string o number, sólo excluimos null/NaN
   const storesWithCoords = stores.filter((s) => {
-    if (s.lat === null || s.lng === null || s.lat === undefined || s.lng === undefined)
+    if (
+      s.lat === null ||
+      s.lng === null ||
+      s.lat === undefined ||
+      s.lng === undefined
+    )
       return false;
     const latNum = Number(s.lat);
     const lngNum = Number(s.lng);
@@ -109,8 +114,9 @@ export default function ExploreStoresPage() {
     <div className="min-h-screen bg-slate-100 flex flex-col">
       <MainHeader subtitle="Explora negocios dentro de la plataforma" />
 
-      <main className="flex-1 max-w-6xl mx-auto px-4 py-6 grid gap-6 md:grid-cols-[260px,1fr]">
-        {/* Panel de filtros */}
+      {/* Layout principal: 3 columnas en desktop */}
+<main className="flex-1 max-w-[1600px] mx-auto px-4 py-6 grid gap-4 md:gap-6 md:grid-cols-[260px,minmax(0,2.6fr),minmax(0,1.4fr)]">
+        {/* Columna izquierda: filtros */}
         <aside className="bg-white border rounded-2xl shadow-sm p-4 h-fit space-y-4">
           <h2 className="text-sm font-semibold text-slate-700">Filtros</h2>
 
@@ -174,19 +180,28 @@ export default function ExploreStoresPage() {
           </form>
         </aside>
 
-        {/* Mapa + lista */}
-        <section className="space-y-4">
-          {/* Mapa Leaflet */}
-          <div className="bg-white border rounded-2xl shadow-sm overflow-hidden">
+        {/* Columna central: MAPA grande */}
+        <section className="bg-white border rounded-2xl shadow-sm overflow-hidden flex flex-col">
+          <div className="px-4 pt-3 pb-2 border-b">
+            <h2 className="text-sm font-semibold text-slate-800">
+              Mapa de negocios
+            </h2>
+            <p className="text-xs text-slate-500">
+              Visualiza los negocios registrados en Vitrinex.
+            </p>
+          </div>
+
+          <div className="flex-1">
             <MapContainer
               center={mapCenter}
               zoom={DEFAULT_ZOOM}
-              style={{ height: "220px", width: "100%" }}
-              scrollWheelZoom={false}
+              style={{ height: "720px", width: "100%" }}
+              scrollWheelZoom={true}
             >
+              {/* 🎨 Tile más bonito (Carto Light) */}
               <TileLayer
-                attribution='&copy; OpenStreetMap contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution="© OpenStreetMap contributors · © CARTO"
+                url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
               />
 
               {storesWithCoords.map((store) => (
@@ -215,77 +230,78 @@ export default function ExploreStoresPage() {
               ))}
             </MapContainer>
           </div>
+        </section>
 
-          <div className="bg-white border rounded-2xl shadow-sm p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-semibold text-slate-800">
-                Negocios encontrados
-              </h2>
-              <span className="text-xs text-slate-500">
-                {loading
-                  ? "Cargando..."
-                  : `${stores.length} negocio(s) encontrados`}
-              </span>
-            </div>
+        {/* Columna derecha: lista de negocios */}
+        <section className="bg-white border rounded-2xl shadow-sm p-4 flex flex-col">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-semibold text-slate-800">
+              Negocios encontrados
+            </h2>
+            <span className="text-xs text-slate-500">
+              {loading
+                ? "Cargando..."
+                : `${stores.length} negocio(s) encontrados`}
+            </span>
+          </div>
 
-            {error && (
-              <p className="text-sm text-red-600 mb-2">{error}</p>
-            )}
+          {error && (
+            <p className="text-sm text-red-600 mb-2">{error}</p>
+          )}
 
-            {!loading && stores.length === 0 && !error && (
-              <p className="text-sm text-slate-500">
-                No se encontraron negocios con los filtros seleccionados.
-              </p>
-            )}
+          {!loading && stores.length === 0 && !error && (
+            <p className="text-sm text-slate-500">
+              No se encontraron negocios con los filtros seleccionados.
+            </p>
+          )}
 
-            <div className="space-y-3">
-              {stores.map((store) => (
-                <article
-                  key={store._id}
-                  className="border rounded-xl px-3 py-3 flex gap-3 items-start hover:border-slate-300 transition bg-white"
-                >
-                  {store.logoUrl && (
-                    <img
-                      src={store.logoUrl}
-                      alt={store.name}
-                      className="w-12 h-12 rounded-lg object-cover border"
-                    />
+          <div className="space-y-3 overflow-y-auto max-h-[560px] pr-1">
+            {stores.map((store) => (
+              <article
+                key={store._id}
+                className="border rounded-xl px-3 py-3 flex gap-3 items-start hover:border-slate-300 transition bg-white"
+              >
+                {store.logoUrl && (
+                  <img
+                    src={store.logoUrl}
+                    alt={store.name}
+                    className="w-12 h-12 rounded-lg object-cover border"
+                  />
+                )}
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="font-semibold text-sm text-slate-800 truncate">
+                      {store.name}
+                    </h3>
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                      {store.mode === "bookings"
+                        ? "Agendamiento"
+                        : "Productos"}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {store.comuna || "Comuna no especificada"} ·{" "}
+                    {store.tipoNegocio || "Tipo no especificado"}
+                  </p>
+                  {store.user?.username && (
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Propietario:{" "}
+                      <span className="font-medium text-slate-700">
+                        {store.user.username}
+                      </span>
+                    </p>
                   )}
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <h3 className="font-semibold text-sm text-slate-800 truncate">
-                        {store.name}
-                      </h3>
-                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                        {store.mode === "bookings"
-                          ? "Agendamiento"
-                          : "Productos"}
-                      </span>
-                    </div>
-
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {store.comuna || "Comuna no especificada"} ·{" "}
-                      {store.tipoNegocio || "Tipo no especificado"}
+                  {store.description && (
+                    <p className="text-xs text-slate-600 mt-1 line-clamp-2">
+                      {store.description}
                     </p>
-                    {store.user?.username && (
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        Propietario:{" "}
-                        <span className="font-medium text-slate-700">
-                          {store.user.username}
-                        </span>
-                      </p>
-                    )}
-
-                    {store.description && (
-                      <p className="text-xs text-slate-600 mt-1 line-clamp-2">
-                        {store.description}
-                      </p>
-                    )}
-                  </div>
-                </article>
-              ))}
-            </div>
+                  )}
+                </div>
+              </article>
+            ))}
           </div>
         </section>
       </main>
