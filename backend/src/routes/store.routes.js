@@ -3,21 +3,18 @@ import { Router } from "express";
 import { authRequired } from "../middlewares/authRequired.js";
 import {
   listPublicStores,
-  listMyStores,
-  createMyStore,
-  updateMyStore,
-  deleteMyStore,
+  getMyStore,
+  saveMyStore,
 } from "../controllers/store.controller.js";
 
 const router = Router();
 
-// 🔹 Público: listado de negocios para el mapa
+// 🔹 Ruta pública: listar tiendas para el mapa / explorador
 router.get("/", listPublicStores);
 
-// 🔹 Privado: rutas del vendedor (requieren estar logueado)
-router.get("/my", authRequired, listMyStores);
-router.post("/my", authRequired, createMyStore);
-router.put("/my/:id", authRequired, updateMyStore);
-router.delete("/my/:id", authRequired, deleteMyStore);
+// 🔹 Rutas protegidas: tiendas del usuario autenticado
+router.get("/my", authRequired, getMyStore);
+router.post("/my", authRequired, saveMyStore);
+router.put("/my", authRequired, saveMyStore);
 
 export default router;

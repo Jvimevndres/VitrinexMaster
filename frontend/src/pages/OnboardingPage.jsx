@@ -40,12 +40,24 @@ export default function OnboardingPage() {
   const loadStores = async () => {
     try {
       setLoading(true);
+      setError("");
+
       const { data } = await listMyStores();
-      setStores(Array.isArray(data) ? data : []);
-      setShowForm(data.length === 0);
+      const arr = Array.isArray(data) ? data : data ? [data] : [];
+
+      setStores(arr);
+      setShowForm(arr.length === 0);
     } catch (err) {
-      console.error(err);
-      setError("Error al cargar tus tiendas");
+      console.error("Error al cargar tiendas:", err?.response || err);
+
+      // ⚠️ Si el backend responde 404, lo tratamos como "sin tiendas"
+      if (err?.response?.status === 404) {
+        setStores([]);
+        setShowForm(true);
+        setError("");
+      } else {
+        setError("Error al cargar tus tiendas");
+      }
     } finally {
       setLoading(false);
     }
@@ -127,7 +139,8 @@ export default function OnboardingPage() {
       };
 
       if (editingId) {
-        await updateMyStore(editingId, payload);
+        // Pasamos el _id en el body para que el backend sepa cuál editar
+        await updateMyStore({ ...payload, _id: editingId });
       } else {
         await saveMyStore(payload);
       }
