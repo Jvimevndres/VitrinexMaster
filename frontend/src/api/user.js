@@ -1,18 +1,16 @@
 // frontend/src/api/user.js
 import axios from "axios";
 
-// Cliente Axios configurado
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+
 const client = axios.create({
-  baseURL: "http://localhost:3000/api",
-  withCredentials: true, // importante para que se envíe la cookie con el token
+  baseURL: API_URL,
+  withCredentials: true,
 });
 
-/* ===========================
-   👤 FUNCIONES DE USUARIO
-   =========================== */
-
-// Obtener perfil del usuario autenticado
+// Obtener perfil
 export const getProfile = () => client.get("/auth/profile");
 
-// Actualizar perfil del usuario autenticado
-export const updateProfile = (payload) => client.put("/auth/profile", payload);
+// Actualizar perfil
+export const updateProfile = (payload) =>
+  client.put("/auth/profile", payload);

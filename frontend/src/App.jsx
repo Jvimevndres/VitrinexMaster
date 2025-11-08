@@ -1,4 +1,4 @@
-// frontend/src/App.jsx
+// src/App.jsx
 import { Routes, Route } from "react-router-dom";
 
 import LoginPage from "./pages/LoginPage";
@@ -9,7 +9,6 @@ import TaskFormPage from "./pages/TaskFormPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import ExploreStoresPage from "./pages/ExploreStoresPage";
 import UserProfilePage from "./pages/UserProfilePage";
-import StoreProfilePage from "./pages/StoreProfilePage";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import Layout from "./components/Layout";
@@ -17,28 +16,26 @@ import Layout from "./components/Layout";
 export default function App() {
   return (
     <Routes>
-      {/* Página pública: explorador de negocios */}
+      {/* Home pública: mapa + filtros + lista de negocios */}
       <Route path="/" element={<ExploreStoresPage />} />
 
-      {/* Autenticación pública */}
+      {/* Auth pública */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
 
-      {/* Rutas protegidas con layout principal (panel interno) */}
+      {/* Rutas protegidas */}
       <Route element={<ProtectedRoute />}>
+        {/* Panel interno con Layout viejo (dashboard, tareas) */}
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/tasks" element={<TasksPage />} />
           <Route path="/tasks/new" element={<TaskFormPage />} />
           <Route path="/tasks/:id/edit" element={<TaskFormPage />} />
-
-          {/* 👤 Perfil de usuario y negocio dentro del panel */}
-          <Route path="/perfil" element={<UserProfilePage />} />
-          <Route path="/negocio" element={<StoreProfilePage />} />
         </Route>
 
-        {/* Onboarding fuera del layout */}
+        {/* Rutas protegidas con MainHeader */}
         <Route path="/onboarding" element={<OnboardingPage />} />
+        <Route path="/perfil" element={<UserProfilePage />} />
       </Route>
 
       {/* 404 */}

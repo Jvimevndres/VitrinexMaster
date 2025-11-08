@@ -7,6 +7,14 @@ export default function MainHeader({ subtitle }) {
   const { isAuthenticated, user, logout } = useAuth();
   const [openMenu, setOpenMenu] = useState(false);
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } finally {
+      setOpenMenu(false);
+    }
+  };
+
   return (
     <header className="bg-white border-b shadow-sm">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -46,25 +54,29 @@ export default function MainHeader({ subtitle }) {
                   onClick={() => setOpenMenu((prev) => !prev)}
                   className="border border-slate-300 text-slate-700 text-xs md:text-sm rounded-lg px-3 py-2 hover:bg-slate-50 flex items-center gap-1"
                 >
-                  Ajustes
-                  <span className="text-[10px]">▼</span>
+                  <span>Ajustes</span>
+                  <span className="text-xs">▾</span>
                 </button>
 
                 {openMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg text-sm z-20">
+                  <div className="absolute right-0 mt-2 w-44 bg-white border border-slate-200 rounded-lg shadow-lg text-sm z-20">
+                    <Link
+                      to="/perfil"
+                      onClick={() => setOpenMenu(false)}
+                      className="block px-4 py-2 hover:bg-slate-50 border-b"
+                    >
+                      Editar perfil
+                    </Link>
                     <Link
                       to="/onboarding"
                       onClick={() => setOpenMenu(false)}
-                      className="block w-full text-left px-3 py-2 hover:bg-slate-50"
+                      className="block px-4 py-2 hover:bg-slate-50 border-b"
                     >
                       Ver / editar mis tiendas
                     </Link>
                     <button
-                      onClick={() => {
-                        setOpenMenu(false);
-                        logout();
-                      }}
-                      className="w-full text-left px-3 py-2 hover:bg-red-50 text-red-600 border-t"
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 hover:bg-slate-50 text-red-600"
                     >
                       Cerrar sesión
                     </button>
