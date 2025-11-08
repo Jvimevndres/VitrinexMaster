@@ -1,7 +1,7 @@
 // src/pages/OnboardingPage.jsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { listMyStores, saveMyStore, updateMyStore } from "../api/store";
+import { listMyStores, saveMyStore } from "../api/store";
 import MainHeader from "../components/MainHeader";
 
 export default function OnboardingPage() {
@@ -21,6 +21,7 @@ export default function OnboardingPage() {
     direccion: "",
   });
 
+  // editingId ahora se usa solo si editas desde el mismo onboarding (para nuevas tiendas lo dejamos en null)
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState("");
 
@@ -50,7 +51,6 @@ export default function OnboardingPage() {
     } catch (err) {
       console.error("Error al cargar tiendas:", err?.response || err);
 
-      // ⚠️ Si el backend responde 404, lo tratamos como "sin tiendas"
       if (err?.response?.status === 404) {
         setStores([]);
         setShowForm(true);
@@ -78,18 +78,9 @@ export default function OnboardingPage() {
     setShowForm(true);
   };
 
+  // 👇 AHORA: en vez de editar inline, vamos a la página de perfil de la tienda
   const handleEditStore = (store) => {
-    setEditingId(store._id);
-    setForm({
-      name: store.name || "",
-      mode: store.mode || "products",
-      description: store.description || "",
-      logoUrl: store.logoUrl || "",
-      comuna: store.comuna || "",
-      tipoNegocio: store.tipoNegocio || "",
-      direccion: store.direccion || "",
-    });
-    setShowForm(true);
+    navigate(`/negocio/${store._id}`);
   };
 
   const getCoordinates = async (address) => {
@@ -138,12 +129,8 @@ export default function OnboardingPage() {
         lng: coords.lng,
       };
 
-      if (editingId) {
-        // Pasamos el _id en el body para que el backend sepa cuál editar
-        await updateMyStore({ ...payload, _id: editingId });
-      } else {
-        await saveMyStore(payload);
-      }
+      // En onboarding usamos esto solo para CREAR nuevas tiendas
+      await saveMyStore(payload);
 
       resetForm();
       await loadStores();
@@ -231,7 +218,7 @@ export default function OnboardingPage() {
         {showForm && (
           <section className="bg-white border rounded-2xl p-4 shadow-sm">
             <h3 className="text-lg font-semibold text-slate-800 mb-3">
-              {editingId ? "Editar tienda" : "Crear nueva tienda"}
+              Crear nueva tienda
             </h3>
 
             <form onSubmit={onSubmit} className="grid gap-4 md:grid-cols-2">
@@ -318,7 +305,7 @@ export default function OnboardingPage() {
                   type="submit"
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
                 >
-                  {editingId ? "Guardar cambios" : "Guardar tienda"}
+                  Guardar tienda
                 </button>
               </div>
             </form>

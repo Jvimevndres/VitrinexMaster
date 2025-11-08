@@ -1,19 +1,19 @@
 // src/controllers/store.controller.js
 import Store from "../models/store.model.js";
 
-// 🔹 Listar tiendas públicas (para el mapa y el buscador de la página principal)
+// 🔹 Listar tiendas públicas (home / mapa)
 export const listPublicStores = async (req, res) => {
   try {
     const { comuna, tipoNegocio, mode } = req.query;
 
-    const query = {};
+    const query = { isActive: true };
     if (comuna) query.comuna = comuna;
     if (tipoNegocio) query.tipoNegocio = tipoNegocio;
     if (mode) query.mode = mode;
-    // Solo activas
-    query.isActive = true;
 
-    const stores = await Store.find(query).lean();
+    const stores = await Store.find(query)
+      .populate("owner", "username avatarUrl")
+      .lean();
 
     res.json(
       stores.map((s) => ({
@@ -28,6 +28,8 @@ export const listPublicStores = async (req, res) => {
         lng: s.lng,
         direccion: s.direccion,
         isActive: s.isActive,
+        ownerName: s.owner?.username || null,
+        ownerAvatar: s.owner?.avatarUrl || null,
       }))
     );
   } catch (err) {
@@ -36,8 +38,7 @@ export const listPublicStores = async (req, res) => {
   }
 };
 
-// 🔹 Obtener TODAS las tiendas del usuario autenticado
-//    Soporta documentos antiguos con campo `user` y nuevos con `owner`
+// 🔹 Obtener tiendas del usuario logueado
 export const getMyStore = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -57,7 +58,7 @@ export const getMyStore = async (req, res) => {
   }
 };
 
-// 🔹 Crear una nueva tienda o actualizar si se envía un _id existente
+// 🔹 Crear / actualizar tienda del usuario
 export const saveMyStore = async (req, res) => {
   const {
     _id,
@@ -82,7 +83,6 @@ export const saveMyStore = async (req, res) => {
     let store;
 
     if (_id) {
-      // Actualizar tienda existente del usuario (por owner O por user)
       store = await Store.findOneAndUpdate(
         {
           _id,
@@ -99,7 +99,6 @@ export const saveMyStore = async (req, res) => {
           lng,
           direccion,
           isActive: true,
-          // normalizamos: de ahora en adelante ambas quedan seteadas
           owner: userId,
           user: userId,
         },
@@ -113,7 +112,6 @@ export const saveMyStore = async (req, res) => {
       return res.status(200).json(store);
     }
 
-    // Crear nueva tienda
     store = await Store.create({
       owner: userId,
       user: userId,
@@ -133,5 +131,40 @@ export const saveMyStore = async (req, res) => {
   } catch (err) {
     console.error("Error al guardar tienda:", err);
     res.status(500).json({ message: "Error al guardar la tienda" });
+  }
+};
+
+// 🔹 Obtener una tienda por ID (perfil público / edición)
+export const getStoreById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const store = await Store.findById(id)
+      .populate("owner", "username avatarUrl email")
+      .lean();
+
+    if (!store) {
+      return res.status(404).json({ message: "Tienda no encontrada" });
+    }
+
+    res.json({
+      _id: store._id,
+      name: store.name,
+      description: store.description,
+      logoUrl: store.logoUrl,
+      comuna: store.comuna,
+      tipoNegocio: store.tipoNegocio,
+      mode: store.mode,
+      direccion: store.direccion,
+      lat: store.lat,
+      lng: store.lng,
+      ownerName: store.owner?.username || null,
+      ownerAvatar: store.owner?.avatarUrl || null,
+      ownerEmail: store.owner?.email || null,
+      createdAt: store.createdAt,
+      updatedAt: store.updatedAt,
+    });
+  } catch (err) {
+    console.error("Error al obtener tienda:", err);
+    res.status(500).json({ message: "Error al obtener la tienda" });
   }
 };

@@ -9,6 +9,8 @@ import TaskFormPage from "./pages/TaskFormPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import ExploreStoresPage from "./pages/ExploreStoresPage";
 import UserProfilePage from "./pages/UserProfilePage";
+import StorePublicPage from "./pages/StorePublic";
+import StoreProfilePage from "./pages/StoreProfilePage";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import Layout from "./components/Layout";
@@ -16,8 +18,11 @@ import Layout from "./components/Layout";
 export default function App() {
   return (
     <Routes>
-      {/* Home pública: mapa + filtros + lista de negocios */}
+      {/* Home pública */}
       <Route path="/" element={<ExploreStoresPage />} />
+
+      {/* Página pública de tienda */}
+      <Route path="/tienda/:id" element={<StorePublicPage />} />
 
       {/* Auth pública */}
       <Route path="/login" element={<LoginPage />} />
@@ -25,7 +30,7 @@ export default function App() {
 
       {/* Rutas protegidas */}
       <Route element={<ProtectedRoute />}>
-        {/* Panel interno con Layout viejo (dashboard, tareas) */}
+        {/* Panel interno con Layout (dashboard, tareas) */}
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/tasks" element={<TasksPage />} />
@@ -33,9 +38,10 @@ export default function App() {
           <Route path="/tasks/:id/edit" element={<TaskFormPage />} />
         </Route>
 
-        {/* Rutas protegidas con MainHeader */}
+        {/* Rutas con MainHeader */}
         <Route path="/onboarding" element={<OnboardingPage />} />
         <Route path="/perfil" element={<UserProfilePage />} />
+        <Route path="/negocio/:id" element={<StoreProfilePage />} />
       </Route>
 
       {/* 404 */}
