@@ -1,7 +1,6 @@
-// src/pages/ExploreStoresPage.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 
 import { listPublicStores } from "../api/store";
@@ -27,6 +26,19 @@ const modesMock = [
   { value: "bookings", label: "Agendamiento" },
 ];
 
+// 🔹 Componente auxiliar para centrar el mapa en una tienda seleccionada
+function FlyToStore({ selectedStore }) {
+  const map = useMap();
+  useEffect(() => {
+    if (selectedStore?.lat && selectedStore?.lng) {
+      map.flyTo([selectedStore.lat, selectedStore.lng], 16, {
+        duration: 1.5,
+      });
+    }
+  }, [selectedStore, map]);
+  return null;
+}
+
 export default function ExploreStoresPage() {
   const [stores, setStores] = useState([]);
   const [filters, setFilters] = useState({
@@ -36,8 +48,9 @@ export default function ExploreStoresPage() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
+  const [selectedStore, setSelectedStore] = useState(null);
   const navigate = useNavigate();
+  const mapRef = useRef(null);
 
   const loadStores = async () => {
     try {
@@ -62,7 +75,6 @@ export default function ExploreStoresPage() {
 
   useEffect(() => {
     loadStores();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onChangeFilter = (e) => {
@@ -85,7 +97,6 @@ export default function ExploreStoresPage() {
         {/* Filtros */}
         <aside className="bg-white border rounded-2xl shadow-sm p-4 space-y-4">
           <h2 className="text-base font-semibold text-slate-800">Filtros</h2>
-
           <form onSubmit={onApplyFilters} className="space-y-3 text-sm">
             <div>
               <label className="block mb-1 text-slate-600">Comuna</label>
@@ -155,6 +166,7 @@ export default function ExploreStoresPage() {
 
           <div className="flex-1 overflow-hidden rounded-xl border">
             <MapContainer
+              ref={mapRef}
               center={center}
               zoom={13}
               style={{ width: "100%", height: "100%" }}
@@ -163,6 +175,8 @@ export default function ExploreStoresPage() {
                 attribution='&copy; OpenStreetMap contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
+
+              <FlyToStore selectedStore={selectedStore} />
 
               {stores.map((store) =>
                 store.lat && store.lng ? (
@@ -223,9 +237,7 @@ export default function ExploreStoresPage() {
             </span>
           </div>
 
-          {error && (
-            <p className="text-xs text-red-600 mb-2">{error}</p>
-          )}
+          {error && <p className="text-xs text-red-600 mb-2">{error}</p>}
 
           {loading ? (
             <p className="text-xs text-slate-500">Cargando negocios…</p>
@@ -238,11 +250,9 @@ export default function ExploreStoresPage() {
               {stores.map((store) => (
                 <article
                   key={store._id}
-                  className="border rounded-xl px-3 py-2 text-sm hover:bg-slate-50 cursor-pointer"
-                  onClick={() => navigate(`/tienda/${store._id}`)}
+                  className="border rounded-xl px-3 py-2 text-sm hover:bg-slate-50 transition cursor-pointer"
                 >
                   <div className="flex items-start gap-3">
-                    {/* Avatar / logo de la tienda */}
                     {store.logoUrl ? (
                       <img
                         src={store.logoUrl}
@@ -281,11 +291,20 @@ export default function ExploreStoresPage() {
                         </p>
                       )}
 
-                      {store.description && (
-                        <p className="text-xs text-slate-600 mt-1 line-clamp-2">
-                          {store.description}
-                        </p>
-                      )}
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          onClick={() => setSelectedStore(store)}
+                          className="text-xs text-blue-600 hover:underline"
+                        >
+                          Ver en mapa
+                        </button>
+                        <button
+                          onClick={() => navigate(`/tienda/${store._id}`)}
+                          className="text-xs text-slate-600 hover:text-blue-700"
+                        >
+                          Ir al perfil →
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </article>
